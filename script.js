@@ -58,97 +58,165 @@ on("chat:message", function(msg) {
 
     const args = msg.content.split(" ");
 
-    // --------- Strength Roll ---------
-    if (args[0] === "!strength-roll") {
-        let charidArgIndex = args.findIndex(a => a === "--charid");
-        if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
-            sendChat("Strength Roll", "/w gm No character ID provided!");
-            return;
-        }
-
-        let charId = args[charidArgIndex + 1];
-        const character = getObj("character", charId);
-        if (!character) {
-            sendChat("Strength Roll", `/w gm Character not found: ${charId}`);
-            return;
-        }
-
-        let dieAttr = getAttrByName(charId, "strength_die");
-        let bonus = parseInt(getAttrByName(charId, "strength_bonus") || "0", 10);
-
-        if (!dieAttr) {
-            sendChat("Strength Roll", `/w gm No Strength Die set for character.`);
-            return;
-        }
-
-        let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
-        if (!dieMatch) {
-            sendChat("Strength Roll", `/w gm Could not parse die type: ${dieAttr}`);
-            return;
-        }
-
-        let numDice = parseInt(dieMatch[1]);
-        let dieSize = parseInt(dieMatch[2]);
-        let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
-
-        let rollTotal = 0;
-        let rollResults = [];
-        for (let i = 0; i < numDice; i++) {
-            let roll = randomInteger(dieSize);
-            rollResults.push(roll);
-            rollTotal += roll;
-        }
-        rollTotal += dieMod + bonus;
-
-        sendChat("Strength Roll", `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+// --------- Strength Roll with Precision and Critical ---------
+if (args[0] === "!strength-roll") {
+    let charidArgIndex = args.findIndex(a => a === "--charid");
+    if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
+        sendChat("Strength Roll", "/w gm No character ID provided!");
+        return;
     }
 
-    // --------- Speed Roll ---------
-    if (args[0] === "!speed-roll") {
-        let charidArgIndex = args.findIndex(a => a === "--charid");
-        if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
-            sendChat("Speed Roll", "/w gm No character ID provided!");
-            return;
-        }
-
-        let charId = args[charidArgIndex + 1];
-        const character = getObj("character", charId);
-        if (!character) {
-            sendChat("Speed Roll", `/w gm Character not found: ${charId}`);
-            return;
-        }
-
-        let dieAttr = getAttrByName(charId, "speed_die");
-        let bonus = parseInt(getAttrByName(charId, "speed_bonus") || "0", 10);
-
-        if (!dieAttr) {
-            sendChat("Speed Roll", `/w gm No Speed Die set for character.`);
-            return;
-        }
-
-        let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
-        if (!dieMatch) {
-            sendChat("Speed Roll", `/w gm Could not parse die type: ${dieAttr}`);
-            return;
-        }
-
-        let numDice = parseInt(dieMatch[1]);
-        let dieSize = parseInt(dieMatch[2]);
-        let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
-
-        let rollTotal = 0;
-        let rollResults = [];
-        for (let i = 0; i < numDice; i++) {
-            let roll = randomInteger(dieSize);
-            rollResults.push(roll);
-            rollTotal += roll;
-        }
-        rollTotal += dieMod + bonus;
-
-        sendChat("Speed Roll", `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    let charId = args[charidArgIndex + 1];
+    const character = getObj("character", charId);
+    if (!character) {
+        sendChat("Strength Roll", `/w gm Character not found: ${charId}`);
+        return;
     }
+
+    let dieAttr = getAttrByName(charId, "strength_die");
+    let bonus = parseInt(getAttrByName(charId, "strength_bonus") || "0", 10);
+    let precision = parseInt(getAttrByName(charId, "precision") || "0", 10);
+
+    if (!dieAttr) {
+        sendChat("Strength Roll", `/w gm No Strength Die set for character.`);
+        return;
+    }
+
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    if (!dieMatch) {
+        sendChat("Strength Roll", `/w gm Could not parse die type: ${dieAttr}`);
+        return;
+    }
+
+    let numDice = parseInt(dieMatch[1]);
+    let dieSize = parseInt(dieMatch[2]);
+    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
+
+    let rollResults = [];
+    let rollTotal = 0;
+
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        // Roll Precision die
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            // Critical: sum both
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            // Take the higher
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    // Add modifier and bonus
+    rollTotal += dieMod + bonus;
+
+    // Build chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat("Strength Roll", chatMessage);
+}
+
+
+    // --------- Speed Roll with Precision and Critical ---------
+if (args[0] === "!speed-roll") {
+    let charidArgIndex = args.findIndex(a => a === "--charid");
+    if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
+        sendChat("Speed Roll", "/w gm No character ID provided!");
+        return;
+    }
+
+    let charId = args[charidArgIndex + 1];
+    const character = getObj("character", charId);
+    if (!character) {
+        sendChat("Speed Roll", `/w gm Character not found: ${charId}`);
+        return;
+    }
+
+    let dieAttr = getAttrByName(charId, "speed_die");
+    let bonus = parseInt(getAttrByName(charId, "speed_bonus") || "0", 10);
+    let precision = parseInt(getAttrByName(charId, "precision") || "0", 10);
+
+    if (!dieAttr) {
+        sendChat("Speed Roll", `/w gm No Speed Die set for character.`);
+        return;
+    }
+
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    if (!dieMatch) {
+        sendChat("Speed Roll", `/w gm Could not parse die type: ${dieAttr}`);
+        return;
+    }
+
+    let numDice = parseInt(dieMatch[1]);
+    let dieSize = parseInt(dieMatch[2]);
+    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
+
+    let rollResults = [];
+    let rollTotal = 0;
+
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        // Roll Precision die
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            // Critical: sum both
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            // Take the higher
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    // Add modifier and bonus
+    rollTotal += dieMod + bonus;
+
+    // Build chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat("Speed Roll", chatMessage);
+}
 });
-// --------- Unique Power 1 Roll ---------
+
+// --------- Unique Power 1 Roll with Precision & Critical ---------
 on("chat:message", function(msg) {
     if (msg.type !== "api") return;
     const args = msg.content.split(" ");
@@ -168,17 +236,17 @@ on("chat:message", function(msg) {
         return;
     }
 
-    // Get die, bonus, and name
+    // Get die, bonus, name, and Precision toggle
     let dieAttr = getAttrByName(charId, "unique_power_1_die");
     let bonus = parseInt(getAttrByName(charId, "unique_power_1_bonus") || "0", 10);
     let powerName = getAttrByName(charId, "unique_power_1_name") || "Unique Power 1";
+    let precision = parseInt(getAttrByName(charId, "precision") || "0", 10);
 
     if (!dieAttr) {
         sendChat(powerName, `/w gm No Power Die set for ${powerName}.`);
         return;
     }
 
-    // Parse die string (e.g., "1d6")
     let dieMatch = dieAttr.match(/(\d+)d(\d+)/i);
     if (!dieMatch) {
         sendChat(powerName, `/w gm Could not parse die type: ${dieAttr}`);
@@ -189,16 +257,48 @@ on("chat:message", function(msg) {
     let dieSize = parseInt(dieMatch[2]);
 
     // Roll dice manually
-    let rollTotal = 0;
     let rollResults = [];
-    for (let i = 0; i < numDice; i++) {
-        let roll = randomInteger(dieSize);
-        rollResults.push(roll);
-        rollTotal += roll;
+    let rollTotal = 0;
+
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        // Roll Precision die
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            // Critical: sum both
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            // Take the higher
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
     }
+
+    // Add bonus
     rollTotal += bonus;
 
-    sendChat(powerName, `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    // Build chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat(powerName, chatMessage);
 });
 
 // --------- Unique Power 2 Roll ---------
@@ -207,6 +307,7 @@ on("chat:message", function(msg) {
     const args = msg.content.split(" ");
     if (args[0] !== "!unique-power-2-roll") return;
 
+    // Get character ID from --charid argument
     let charidArgIndex = args.findIndex(a => a === "--charid");
     if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
         sendChat("Unique Power 2 Roll", "/w gm No character ID provided!");
@@ -220,6 +321,13 @@ on("chat:message", function(msg) {
         return;
     }
 
+    // Get precision argument from button
+    let precisionIndex = args.findIndex(a => a === "--precision");
+    let precision = 0;
+    if (precisionIndex !== -1 && args[precisionIndex + 1]) {
+        precision = parseInt(args[precisionIndex + 1], 10) || 0;
+    }
+
     // Get die, bonus, and name
     let dieAttr = getAttrByName(charId, "unique_power_2_die");
     let bonus = parseInt(getAttrByName(charId, "unique_power_2_bonus") || "0", 10);
@@ -230,7 +338,7 @@ on("chat:message", function(msg) {
         return;
     }
 
-    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)/i);
     if (!dieMatch) {
         sendChat(powerName, `/w gm Could not parse die type: ${dieAttr}`);
         return;
@@ -238,18 +346,45 @@ on("chat:message", function(msg) {
 
     let numDice = parseInt(dieMatch[1]);
     let dieSize = parseInt(dieMatch[2]);
-    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
 
-    let rollTotal = 0;
     let rollResults = [];
-    for (let i = 0; i < numDice; i++) {
-        let roll = randomInteger(dieSize);
-        rollResults.push(roll);
-        rollTotal += roll;
-    }
-    rollTotal += dieMod + bonus;
+    let rollTotal = 0;
 
-    sendChat(powerName, `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    rollTotal += bonus;
+
+    // Chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat(powerName, chatMessage);
 });
 
 // --------- Unique Power 3 Roll ---------
@@ -258,6 +393,7 @@ on("chat:message", function(msg) {
     const args = msg.content.split(" ");
     if (args[0] !== "!unique-power-3-roll") return;
 
+    // Get character ID from --charid argument
     let charidArgIndex = args.findIndex(a => a === "--charid");
     if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
         sendChat("Unique Power 3 Roll", "/w gm No character ID provided!");
@@ -271,6 +407,13 @@ on("chat:message", function(msg) {
         return;
     }
 
+    // Get precision argument from button
+    let precisionIndex = args.findIndex(a => a === "--precision");
+    let precision = 0;
+    if (precisionIndex !== -1 && args[precisionIndex + 1]) {
+        precision = parseInt(args[precisionIndex + 1], 10) || 0;
+    }
+
     // Get die, bonus, and name
     let dieAttr = getAttrByName(charId, "unique_power_3_die");
     let bonus = parseInt(getAttrByName(charId, "unique_power_3_bonus") || "0", 10);
@@ -281,7 +424,7 @@ on("chat:message", function(msg) {
         return;
     }
 
-    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)/i);
     if (!dieMatch) {
         sendChat(powerName, `/w gm Could not parse die type: ${dieAttr}`);
         return;
@@ -289,18 +432,45 @@ on("chat:message", function(msg) {
 
     let numDice = parseInt(dieMatch[1]);
     let dieSize = parseInt(dieMatch[2]);
-    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
 
-    let rollTotal = 0;
     let rollResults = [];
-    for (let i = 0; i < numDice; i++) {
-        let roll = randomInteger(dieSize);
-        rollResults.push(roll);
-        rollTotal += roll;
-    }
-    rollTotal += dieMod + bonus;
+    let rollTotal = 0;
 
-    sendChat(powerName, `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    rollTotal += bonus;
+
+    // Chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat(powerName, chatMessage);
 });
 
 // --------- Unique Power 4 Roll ---------
@@ -309,6 +479,7 @@ on("chat:message", function(msg) {
     const args = msg.content.split(" ");
     if (args[0] !== "!unique-power-4-roll") return;
 
+    // Get character ID from --charid argument
     let charidArgIndex = args.findIndex(a => a === "--charid");
     if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
         sendChat("Unique Power 4 Roll", "/w gm No character ID provided!");
@@ -322,6 +493,13 @@ on("chat:message", function(msg) {
         return;
     }
 
+    // Get precision argument from button
+    let precisionIndex = args.findIndex(a => a === "--precision");
+    let precision = 0;
+    if (precisionIndex !== -1 && args[precisionIndex + 1]) {
+        precision = parseInt(args[precisionIndex + 1], 10) || 0;
+    }
+
     // Get die, bonus, and name
     let dieAttr = getAttrByName(charId, "unique_power_4_die");
     let bonus = parseInt(getAttrByName(charId, "unique_power_4_bonus") || "0", 10);
@@ -332,7 +510,7 @@ on("chat:message", function(msg) {
         return;
     }
 
-    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)/i);
     if (!dieMatch) {
         sendChat(powerName, `/w gm Could not parse die type: ${dieAttr}`);
         return;
@@ -340,18 +518,45 @@ on("chat:message", function(msg) {
 
     let numDice = parseInt(dieMatch[1]);
     let dieSize = parseInt(dieMatch[2]);
-    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
 
-    let rollTotal = 0;
     let rollResults = [];
-    for (let i = 0; i < numDice; i++) {
-        let roll = randomInteger(dieSize);
-        rollResults.push(roll);
-        rollTotal += roll;
-    }
-    rollTotal += dieMod + bonus;
+    let rollTotal = 0;
 
-    sendChat(powerName, `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    rollTotal += bonus;
+
+    // Chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat(powerName, chatMessage);
 });
 
 // --------- Unique Power 5 Roll ---------
@@ -360,6 +565,7 @@ on("chat:message", function(msg) {
     const args = msg.content.split(" ");
     if (args[0] !== "!unique-power-5-roll") return;
 
+    // Get character ID from --charid argument
     let charidArgIndex = args.findIndex(a => a === "--charid");
     if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
         sendChat("Unique Power 5 Roll", "/w gm No character ID provided!");
@@ -373,6 +579,13 @@ on("chat:message", function(msg) {
         return;
     }
 
+    // Get precision argument from button
+    let precisionIndex = args.findIndex(a => a === "--precision");
+    let precision = 0;
+    if (precisionIndex !== -1 && args[precisionIndex + 1]) {
+        precision = parseInt(args[precisionIndex + 1], 10) || 0;
+    }
+
     // Get die, bonus, and name
     let dieAttr = getAttrByName(charId, "unique_power_5_die");
     let bonus = parseInt(getAttrByName(charId, "unique_power_5_bonus") || "0", 10);
@@ -383,7 +596,7 @@ on("chat:message", function(msg) {
         return;
     }
 
-    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)/i);
     if (!dieMatch) {
         sendChat(powerName, `/w gm Could not parse die type: ${dieAttr}`);
         return;
@@ -391,18 +604,45 @@ on("chat:message", function(msg) {
 
     let numDice = parseInt(dieMatch[1]);
     let dieSize = parseInt(dieMatch[2]);
-    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
 
-    let rollTotal = 0;
     let rollResults = [];
-    for (let i = 0; i < numDice; i++) {
-        let roll = randomInteger(dieSize);
-        rollResults.push(roll);
-        rollTotal += roll;
-    }
-    rollTotal += dieMod + bonus;
+    let rollTotal = 0;
 
-    sendChat(powerName, `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    rollTotal += bonus;
+
+    // Chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat(powerName, chatMessage);
 });
 
 // --------- Unique Power 6 Roll ---------
@@ -411,6 +651,7 @@ on("chat:message", function(msg) {
     const args = msg.content.split(" ");
     if (args[0] !== "!unique-power-6-roll") return;
 
+    // Get character ID from --charid argument
     let charidArgIndex = args.findIndex(a => a === "--charid");
     if (charidArgIndex === -1 || !args[charidArgIndex + 1]) {
         sendChat("Unique Power 6 Roll", "/w gm No character ID provided!");
@@ -424,6 +665,13 @@ on("chat:message", function(msg) {
         return;
     }
 
+    // Get precision argument from button
+    let precisionIndex = args.findIndex(a => a === "--precision");
+    let precision = 0;
+    if (precisionIndex !== -1 && args[precisionIndex + 1]) {
+        precision = parseInt(args[precisionIndex + 1], 10) || 0;
+    }
+
     // Get die, bonus, and name
     let dieAttr = getAttrByName(charId, "unique_power_6_die");
     let bonus = parseInt(getAttrByName(charId, "unique_power_6_bonus") || "0", 10);
@@ -434,7 +682,7 @@ on("chat:message", function(msg) {
         return;
     }
 
-    let dieMatch = dieAttr.match(/(\d+)d(\d+)([+-]\d+)?/i);
+    let dieMatch = dieAttr.match(/(\d+)d(\d+)/i);
     if (!dieMatch) {
         sendChat(powerName, `/w gm Could not parse die type: ${dieAttr}`);
         return;
@@ -442,18 +690,45 @@ on("chat:message", function(msg) {
 
     let numDice = parseInt(dieMatch[1]);
     let dieSize = parseInt(dieMatch[2]);
-    let dieMod = dieMatch[3] ? parseInt(dieMatch[3]) : 0;
 
-    let rollTotal = 0;
     let rollResults = [];
-    for (let i = 0; i < numDice; i++) {
-        let roll = randomInteger(dieSize);
-        rollResults.push(roll);
-        rollTotal += roll;
-    }
-    rollTotal += dieMod + bonus;
+    let rollTotal = 0;
 
-    sendChat(powerName, `/em Rolled: [${rollResults.join(", ")}] + Bonus ${bonus} = ${rollTotal}`);
+    // Roll the first die
+    let firstRoll = randomInteger(dieSize);
+    rollResults.push(firstRoll);
+
+    if (precision === 1) {
+        let secondRoll = randomInteger(dieSize);
+        rollResults.push(secondRoll);
+
+        if (firstRoll === secondRoll) {
+            rollTotal = firstRoll + secondRoll;
+        } else {
+            rollTotal = Math.max(firstRoll, secondRoll);
+        }
+    } else {
+        rollTotal = firstRoll;
+    }
+
+    rollTotal += bonus;
+
+    // Chat message
+    let chatMessage = "";
+    if (precision === 1) {
+        const [first, second] = rollResults;
+        if (first === second) {
+            chatMessage = `/em Rolled: [${first}, ${second}] + Bonus ${bonus} = ${rollTotal} ⚡ CRITICAL! ⚡`;
+        } else {
+            const higher = Math.max(first, second);
+            const lower = Math.min(first, second);
+            chatMessage = `/em Rolled: [${lower}, ${higher} ↑] + Bonus ${bonus} = ${rollTotal}`;
+        }
+    } else {
+        chatMessage = `/em Rolled: [${rollResults[0]}] + Bonus ${bonus} = ${rollTotal}`;
+    }
+
+    sendChat(powerName, chatMessage);
 });
 
 on("chat:message", function(msg) {
