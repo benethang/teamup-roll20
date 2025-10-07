@@ -615,3 +615,17 @@ div[style*="flex-grow: 1"] {
 .condition-toggle-label:hover {
   background: #ccc;
 }
+
+/* Mobile adjustments - more general */
+@media (max-width: 600px) {
+  body, .sheet-wrapper, .sheet-container, table {
+    font-size: 16px !important; /* bigger text */
+    width: 100% !important;     /* stretch containers to fit screen */
+    overflow-x: auto !important; /* allow horizontal scrolling */
+  }
+
+  input, select, textarea {
+    width: 90% !important;  /* easier to tap */
+    font-size: 16px !important;
+  }
+}
