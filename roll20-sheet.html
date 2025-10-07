@@ -261,6 +261,10 @@
     <!-- ===== Inherent Powers ===== -->
 <div class="inherent-powers">
   <h2>Inherent Powers</h2>
+  <label style="display: inline-block; vertical-align: middle;">
+    <input type="checkbox" name="attr_precision" value="1">
+    Precision
+  </label>
   <div class="power-cards">
     <!-- Strength Power Block -->
     <div class="inherent-power strength">
@@ -288,7 +292,7 @@
           <option value="1d20">d20</option>
         </select>
       </div>
-      <button type="roll" value="!strength-roll --charid @{character_id}">Roll Power Die</button>
+      <button type="roll" value="!strength-roll --charid @{character_id} --precision @{precision}">Roll Strength</button>
       <div class="permanent-bonus">
         <label>Permanent Bonus:</label>
         <span>+</span><input type="number" name="attr_strength_bonus" style="width: 40px;" />
@@ -332,7 +336,7 @@
           <option value="1d20">d20</option>
         </select>
       </div>
-      <button type="roll" value="!speed-roll --charid @{character_id}">Roll Power Die</button>
+      <button type="roll" value="!speed-roll --charid @{character_id} --precision @{precision}">Roll Speed</button>
       <div class="permanent-bonus">
         <label>Permanent Bonus:</label>
         <span>+</span><input type="number" name="attr_speed_bonus" style="width: 40px;" />
@@ -394,9 +398,14 @@
 <!-- ===== Unique Powers Tab ===== -->
 <div class="sheet-tab-content sheet-unique" id="panel-unique">
 
-  <!-- Unique Powers Container -->
-  <div class="unique-powers-container">
-    <h3>Unique Powers</h3>
+<!-- Unique Powers Container -->
+<div class="unique-powers-container">
+  <h3 style="display: inline-block; margin-right: 10px;">Unique Powers</h3>
+  <label style="display: inline-block; vertical-align: middle;">
+    <input type="checkbox" name="attr_precision" value="1">
+    Precision
+  </label>
+</div>
 
     <div class="power-cards">
 
@@ -435,7 +444,7 @@
           <label>Permanent Bonus:</label>
           <span>+</span><input type="number" name="attr_unique_power_1_bonus" style="width: 40px;" />
         </div>
-        <button type="roll" value="!unique1-roll --charid @{character_id}">Roll Power Die</button>
+        <button type="roll" value="!unique1-roll --charid @{character_id} --precision @{precision}">Roll Power Die</button>
 
         <div class="range-type">
           <label><input type="checkbox" name="attr_unique_power_1_range_type" value="Ranged" /> Ranged</label>
@@ -494,7 +503,7 @@
           <label>Permanent Bonus:</label>
           <span>+</span><input type="number" name="attr_unique_power_2_bonus" style="width: 40px;" />
         </div>
-        <button type="roll" value="!unique-power-2-roll --charid @{character_id}">Roll Power Die</button>
+        <button type="roll" value="!unique-power-2-roll --charid @{character_id} --precision @{precision}">Roll Power Die</button>
 
         <div class="range-type">
           <label><input type="checkbox" name="attr_unique_power_2_range_type" value="Ranged" /> Ranged</label>
@@ -553,7 +562,7 @@
           <label>Permanent Bonus:</label>
           <span>+</span><input type="number" name="attr_unique_power_3_bonus" style="width: 40px;" />
         </div>
-        <button type="roll" value="!unique-power-3-roll --charid @{character_id}">Roll Power Die</button>
+        <button type="roll" value="!unique-power-3-roll --charid @{character_id} --precision @{precision}">Roll Power Die</button>
 
         <div class="range-type">
           <label><input type="checkbox" name="attr_unique_power_3_range_type" value="Ranged" /> Ranged</label>
@@ -612,7 +621,7 @@
           <label>Permanent Bonus:</label>
           <span>+</span><input type="number" name="attr_unique_power_4_bonus" style="width: 40px;" />
         </div>
-        <button type="roll" value="!unique-power-4-roll --charid @{character_id}">Roll Power Die</button>
+        <button type="roll" value="!unique-power-4-roll --charid @{character_id} --precision @{precision}">Roll Power Die</button>
 
         <div class="range-type">
           <label><input type="checkbox" name="attr_unique_power_4_range_type" value="Ranged" /> Ranged</label>
@@ -671,7 +680,7 @@
           <label>Permanent Bonus:</label>
           <span>+</span><input type="number" name="attr_unique_power_5_bonus" style="width: 40px;" />
         </div>
-        <button type="roll" value="!unique-power-5-roll --charid @{character_id}">Roll Power Die</button>
+        <button type="roll" value="!unique-power-5-roll --charid @{character_id} --precision @{precision}">Roll Power Die</button>
 
         <div class="range-type">
           <label><input type="checkbox" name="attr_unique_power_5_range_type" value="Ranged" /> Ranged</label>
@@ -730,7 +739,7 @@
     <label>Permanent Bonus:</label>
     <span>+</span><input type="number" name="attr_unique_power_6_bonus" style="width: 40px;" />
   </div>
-  <button type="roll" value="!unique-power-6-roll --charid @{character_id}">Roll Power Die</button>
+  <button type="roll" value="!unique-power-6-roll --charid @{character_id} --precision @{precision}">Roll Power Die</button>
 
   <div class="range-type">
     <label><input type="checkbox" name="attr_unique_power_6_range_type" value="Ranged" /> Ranged</label>
